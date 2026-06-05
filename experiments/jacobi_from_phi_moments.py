@@ -48,11 +48,21 @@ def moment(k: int, upper: float = 2.5) -> float:
     return 2.0 * value
 
 
+def pad_to(poly: np.ndarray, length: int) -> np.ndarray:
+    """Pad a coefficient vector to a target length."""
+    if len(poly) >= length:
+        return poly[:length]
+    return np.pad(poly, (0, length - len(poly)))
+
+
 def inner_product(poly_a: np.ndarray, poly_b: np.ndarray, moments: List[float]) -> float:
     """Inner product of polynomials with coefficients in ascending order."""
+    length = max(len(poly_a), len(poly_b))
+    a = pad_to(poly_a, length)
+    b = pad_to(poly_b, length)
     total = 0.0
-    for i, ai in enumerate(poly_a):
-        for j, bj in enumerate(poly_b):
+    for i, ai in enumerate(a):
+        for j, bj in enumerate(b):
             total += ai * bj * moments[i + j]
     return total
 
@@ -68,7 +78,7 @@ def orthonormal_polynomials(n: int, moments: List[float]) -> List[np.ndarray]:
         p = np.zeros(degree + 1)
         p[-1] = 1.0
         for q in polys:
-            q_padded = np.pad(q, (0, len(p) - len(q)))
+            q_padded = pad_to(q, len(p))
             coeff = inner_product(p, q_padded, moments)
             p = p - coeff * q_padded
         norm_sq = inner_product(p, p, moments)
@@ -86,8 +96,7 @@ def jacobi_matrix(n: int) -> np.ndarray:
     for i, pi in enumerate(polys):
         x_pi = multiply_x(pi)
         for j, pj in enumerate(polys):
-            pj_padded = np.pad(pj, (0, len(x_pi) - len(pj)))
-            J[j, i] = inner_product(x_pi, pj_padded, moments)
+            J[j, i] = inner_product(x_pi, pj, moments)
     return 0.5 * (J + J.T)
 
 
